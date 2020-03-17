@@ -42,7 +42,7 @@ namespace Shadowsocks.Controller
 
         public int RunningPort => _runningPort;
 
-        public void Start(Configuration configuration)
+        public void Start(ShadowsocksController shadowsocksController, Configuration configuration)
         {
             if (_process == null)
             {
@@ -51,9 +51,10 @@ namespace Shadowsocks.Controller
                 {
                     KillProcess(p);
                 }
+                var server = shadowsocksController.GetCurrentServer();
                 string privoxyConfig = Resources.privoxy_conf;
-                _runningPort = GetFreePort(configuration.isIPv6Enabled);
-                privoxyConfig = privoxyConfig.Replace("__SOCKS_PORT__", configuration.localPort.ToString());
+                _runningPort = configuration.localPort;
+                privoxyConfig = privoxyConfig.Replace("__SOCKS_PORT__", server.server_port.ToString());
                 privoxyConfig = privoxyConfig.Replace("__PRIVOXY_BIND_PORT__", _runningPort.ToString());
                 privoxyConfig = configuration.isIPv6Enabled
                     ? privoxyConfig.Replace("__PRIVOXY_BIND_IP__", configuration.shareOverLan ? "[::]" : "[::1]")

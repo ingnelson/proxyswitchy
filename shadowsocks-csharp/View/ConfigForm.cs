@@ -19,93 +19,13 @@ namespace Shadowsocks.View
 
         private bool isChange = false;
 
-        private class EncryptionMethod
-        {
-            public readonly string name;
-            public readonly bool deprecated;
-
-            // Edit here to add/delete encryption method displayed in UI
-            private static string[] deprecatedMethod = new string[]
-            {
-                "rc4-md5",
-                "salsa20",
-                "chacha20",
-                "bf-cfb",
-                "chacha20-ietf",
-                "aes-256-cfb",
-                "aes-192-cfb",
-                "aes-128-cfb",
-                "aes-256-ctr",
-                "aes-192-ctr",
-                "aes-128-ctr",
-                "camellia-256-cfb",
-                "camellia-192-cfb",
-                "camellia-128-cfb",
-            };
-            private static string[] inuseMethod = new string[]
-            {
-                "aes-256-gcm",
-                "aes-192-gcm",
-                "aes-128-gcm",
-                "chacha20-ietf-poly1305",
-                "xchacha20-ietf-poly1305",
-            };
-            public static EncryptionMethod[] AllMethods
-            {
-                get
-                {
-                    if (!init) Init();
-                    return allMethods;
-                }
-            }
-            private static bool init = false;
-            private static EncryptionMethod[] allMethods;
-            private static Dictionary<string, EncryptionMethod> methodByName = new Dictionary<string, EncryptionMethod>();
-            private static void Init()
-            {
-                var all = new List<EncryptionMethod>();
-
-                all.AddRange(inuseMethod.Select(i => new EncryptionMethod(i, false)));
-                all.AddRange(deprecatedMethod.Select(d => new EncryptionMethod(d, true)));
-
-                allMethods = all.ToArray();
-                foreach (var item in all)
-                {
-                    methodByName[item.name] = item;
-                }
-                init = true;
-            }
-
-            public static EncryptionMethod GetMethod(string name)
-            {
-                if (!init) Init();
-                bool success = methodByName.TryGetValue(name, out EncryptionMethod method);
-                if (!success)
-                {
-                    string defaultMethod = Server.DefaultMethod;
-                    MessageBox.Show(I18N.GetString("Encryption method {0} not exist, will replace with {1}", name, defaultMethod), I18N.GetString("Shadowsocks"));
-                    return methodByName[defaultMethod];
-                }
-                return method;
-            }
-
-            private EncryptionMethod(string name, bool deprecated)
-            {
-                this.name = name;
-                this.deprecated = deprecated;
-            }
-
-            public override string ToString()
-            {
-                return deprecated ? $"{name} ({I18N.GetString("deprecated")})" : name;
-            }
-        }
+        private static readonly String[] proxyTypes = {"SOCKS5", "HTTP"};
 
         public ConfigForm(ShadowsocksController controller)
         {
             Font = SystemFonts.MessageBoxFont;
             InitializeComponent();
-            EncryptionSelect.Items.AddRange(EncryptionMethod.AllMethods);
+            ProxyTypeSelect.Items.AddRange(proxyTypes);
 
             // a dirty hack
             ServersListBox.Dock = DockStyle.Fill;
@@ -132,15 +52,10 @@ namespace Shadowsocks.View
         {
             IPTextBox.TextChanged += ConfigValueChanged;
             ProxyPortTextBox.TextChanged += ConfigValueChanged;
-            PasswordTextBox.TextChanged += ConfigValueChanged;
-            EncryptionSelect.SelectedIndexChanged += ConfigValueChanged;
-            PluginTextBox.TextChanged += ConfigValueChanged;
-            PluginArgumentsTextBox.TextChanged += ConfigValueChanged;
-            PluginOptionsTextBox.TextChanged += ConfigValueChanged;
             RemarksTextBox.TextChanged += ConfigValueChanged;
-            TimeoutTextBox.TextChanged += ConfigValueChanged;
             PortableModeCheckBox.CheckedChanged += ConfigValueChanged;
             ServerPortTextBox.TextChanged += ConfigValueChanged;
+            ProxyTypeSelect.SelectedIndexChanged += ConfigValueChanged;
         }
 
         private void Controller_ConfigChanged(object sender, EventArgs e)
@@ -187,31 +102,22 @@ namespace Shadowsocks.View
 
             bool? checkIP = false;
             bool? checkPort = false;
-            bool? checkPassword = false;
-            bool? checkTimeout = false;
 
             if ((checkIP = CheckIPTextBox(out string address, isSave, isCopy)).GetValueOrDefault(false) && address != null
-                    && (checkPort = CheckServerPortTextBox(out int? addressPort, isSave, isCopy)).GetValueOrDefault(false) && addressPort.HasValue
-                        && (checkPassword = CheckPasswordTextBox(out string serverPassword, isSave, isCopy)).GetValueOrDefault(false) && serverPassword != null
-                            && (checkTimeout = CheckTimeoutTextBox(out int? timeout, isSave, isCopy)).GetValueOrDefault(false) && timeout.HasValue)
+                    && (checkPort = CheckServerPortTextBox(out int? addressPort, isSave, isCopy)).GetValueOrDefault(false) && addressPort.HasValue)
             {
                 server = new Server()
                 {
                     server = address,
                     server_port = addressPort.Value,
-                    password = serverPassword,
-                    method = ((EncryptionMethod)EncryptionSelect.SelectedItem).name,
-                    plugin = PluginTextBox.Text,
-                    plugin_opts = PluginOptionsTextBox.Text,
-                    plugin_args = PluginArgumentsTextBox.Text,
+                    proxy_type = ProxyTypeSelect.SelectedItem.ToString(),
                     remarks = RemarksTextBox.Text,
-                    timeout = timeout.Value,
                 };
 
                 return true;
             }
 
-            if (checkIP == null || checkPort == null || checkTimeout == null)
+            if (checkIP == null || checkPort == null)
             {
                 _modifiedConfiguration.configs.RemoveAt(_lastSelectedIndex);
                 ServersListBox.SelectedIndexChanged -= ServersListBox_SelectedIndexChanged;
@@ -308,83 +214,6 @@ namespace Shadowsocks.View
             return true;
         }
 
-        private bool? CheckPasswordTextBox(out string password, bool isSave, bool isCopy)
-        {
-            password = null;
-            string outPassword;
-            if ((outPassword = PasswordTextBox.Text).IsNullOrWhiteSpace())
-            {
-                if (!isSave && !isCopy && ServersListBox.Items.Count > 1 && I18N.GetString("New server").Equals(ServersListBox.Items[_lastSelectedIndex].ToString()))
-                {
-                    DialogResult result = MessageBox.Show(I18N.GetString("Whether to discard unconfigured servers"), I18N.GetString("Operation failure"), MessageBoxButtons.OKCancel);
-
-                    if (result == DialogResult.OK)
-                        return null;
-                }
-                else if (isChange && !isSave && !isCopy)
-                {
-                    var result = MessageBox.Show(I18N.GetString("Password can not be blank, Cannot automatically save or discard changes"), I18N.GetString("Auto save failed"), MessageBoxButtons.OKCancel);
-
-                    if (result == DialogResult.Cancel)
-                        return false;
-                    else
-                    {
-                        password = _modifiedConfiguration.configs[_lastSelectedIndex].password;
-                        return true;
-                    }
-                }
-                else
-                {
-                    MessageBox.Show(I18N.GetString("Password can not be blank"), I18N.GetString("Operation failure"));
-                    PasswordTextBox.Focus();
-                }
-                return false;
-            }
-            else
-            {
-                password = outPassword;
-            }
-            return true;
-        }
-
-        private bool? CheckTimeoutTextBox(out int? timeout, bool isSave, bool isCopy)
-        {
-            timeout = null;
-            if (!int.TryParse(TimeoutTextBox.Text, out int outTimeout))
-            {
-                if (!isSave && !isCopy && ServersListBox.Items.Count > 1 && I18N.GetString("New server").Equals(ServersListBox.Items[_lastSelectedIndex].ToString()))
-                {
-                    DialogResult result = MessageBox.Show(I18N.GetString("Whether to discard unconfigured servers"), I18N.GetString("Operation failure"), MessageBoxButtons.OKCancel);
-
-                    if (result == DialogResult.OK)
-                        return null;
-                }
-                else if (isChange && !isSave && !isCopy)
-                {
-                    var result = MessageBox.Show(I18N.GetString("Illegal timeout format, Cannot automatically save or discard changes"), I18N.GetString("Auto save failed"), MessageBoxButtons.OKCancel);
-
-                    if (result == DialogResult.Cancel)
-                        return false;
-                    else
-                    {
-                        timeout = _modifiedConfiguration.configs[_lastSelectedIndex].timeout;
-                        return true;
-                    }
-                }
-                else
-                {
-                    MessageBox.Show(I18N.GetString("Illegal timeout format"), I18N.GetString("Operation failure"));
-                    TimeoutTextBox.Focus();
-                }
-                return false;
-            }
-            else
-            {
-                timeout = outTimeout;
-            }
-            return true;
-        }
-
         #endregion
 
         private void LoadSelectedServerDetails()
@@ -400,26 +229,10 @@ namespace Shadowsocks.View
         {
             IPTextBox.Text = server.server;
             ServerPortTextBox.Text = server.server_port.ToString();
-            PasswordTextBox.Text = server.password;
-            EncryptionSelect.SelectedItem = EncryptionMethod.GetMethod(server.method ?? Server.DefaultMethod);
-            PluginTextBox.Text = server.plugin;
-            PluginOptionsTextBox.Text = server.plugin_opts;
-            PluginArgumentsTextBox.Text = server.plugin_args;
-
-            bool showPluginArgInput = !string.IsNullOrEmpty(server.plugin_args);
-            NeedPluginArgCheckBox.Checked = showPluginArgInput;
-            ShowHidePluginArgInput(showPluginArgInput);
-
+            ProxyTypeSelect.SelectedItem = Server.DefaultProxyType;
             RemarksTextBox.Text = server.remarks;
-            TimeoutTextBox.Text = server.timeout.ToString();
 
             isChange = false;
-        }
-
-        private void ShowHidePluginArgInput(bool show)
-        {
-            PluginArgumentsTextBox.Visible = show;
-            PluginArgumentsLabel.Visible = show;
         }
 
         private void LoadServerNameListToUI(Configuration configuration)
@@ -618,16 +431,6 @@ namespace Shadowsocks.View
         private void ConfigForm_FormClosed(object sender, FormClosedEventArgs e)
         {
             controller.ConfigChanged -= Controller_ConfigChanged;
-        }
-
-        private void ShowPasswdCheckBox_CheckedChanged(object sender, EventArgs e)
-        {
-            PasswordTextBox.UseSystemPasswordChar = !ShowPasswdCheckBox.Checked;
-        }
-
-        private void UsePluginArgCheckBox_CheckedChanged(object sender, EventArgs e)
-        {
-            ShowHidePluginArgInput(NeedPluginArgCheckBox.Checked);
         }
     }
 }

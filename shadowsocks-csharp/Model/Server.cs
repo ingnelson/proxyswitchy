@@ -11,8 +11,9 @@ namespace Shadowsocks.Model
     [Serializable]
     public class Server
     {
-        public const string DefaultMethod = "chacha20-ietf-poly1305";
-        public const int DefaultPort = 8388;
+        public const string DefaultServer = "127.0.0.1";
+        public const int DefaultPort = 1090;
+        public const string DefaultProxyType = "SOCKS5";
 
         #region ParseLegacyURL
         public static readonly Regex
@@ -25,13 +26,8 @@ namespace Shadowsocks.Model
 
         public string server;
         public int server_port;
-        public string password;
-        public string method;
-        public string plugin;
-        public string plugin_opts;
-        public string plugin_args;
+        public string proxy_type;
         public string remarks;
-        public int timeout;
 
         public override int GetHashCode()
         {
@@ -71,15 +67,10 @@ namespace Shadowsocks.Model
 
         public Server()
         {
-            server = "";
+            server = DefaultServer;
             server_port = DefaultPort;
-            method = DefaultMethod;
-            plugin = "";
-            plugin_opts = "";
-            plugin_args = "";
-            password = "";
+            proxy_type = DefaultProxyType;
             remarks = "";
-            timeout = DefaultServerTimeoutSec;
         }
 
         private static Server ParseLegacyURL(string ssURL)
@@ -107,86 +98,9 @@ namespace Shadowsocks.Model
             }
             if (!details.Success)
                 return null;
-            server.method = details.Groups["method"].Value;
-            server.password = details.Groups["password"].Value;
             server.server = details.Groups["hostname"].Value;
             server.server_port = int.Parse(details.Groups["port"].Value);
             return server;
-        }
-
-        public static List<Server> GetServers(string ssURL)
-        {
-            var serverUrls = ssURL.Split('\r', '\n', ' ');
-
-            List<Server> servers = new List<Server>();
-            foreach (string serverUrl in serverUrls)
-            {
-                string _serverUrl = serverUrl.Trim();
-                if (!_serverUrl.BeginWith("ss://", StringComparison.InvariantCultureIgnoreCase))
-                {
-                    continue;
-                }
-
-                Server legacyServer = ParseLegacyURL(serverUrl);
-                if (legacyServer != null)   //legacy
-                {
-                    servers.Add(legacyServer);
-                }
-                else   //SIP002
-                {
-                    Uri parsedUrl;
-                    try
-                    {
-                        parsedUrl = new Uri(serverUrl);
-                    }
-                    catch (UriFormatException)
-                    {
-                        continue;
-                    }
-                    Server server = new Server
-                    {
-                        remarks = parsedUrl.GetComponents(UriComponents.Fragment, UriFormat.Unescaped),
-                        server = parsedUrl.IdnHost,
-                        server_port = parsedUrl.Port,
-                    };
-
-                    // parse base64 UserInfo
-                    string rawUserInfo = parsedUrl.GetComponents(UriComponents.UserInfo, UriFormat.Unescaped);
-                    string base64 = rawUserInfo.Replace('-', '+').Replace('_', '/');    // Web-safe base64 to normal base64
-                    string userInfo = "";
-                    try
-                    {
-                        userInfo = Encoding.UTF8.GetString(Convert.FromBase64String(
-                        base64.PadRight(base64.Length + (4 - base64.Length % 4) % 4, '=')));
-                    }
-                    catch (FormatException)
-                    {
-                        continue;
-                    }
-                    string[] userInfoParts = userInfo.Split(new char[] { ':' }, 2);
-                    if (userInfoParts.Length != 2)
-                    {
-                        continue;
-                    }
-                    server.method = userInfoParts[0];
-                    server.password = userInfoParts[1];
-
-                    NameValueCollection queryParameters = HttpUtility.ParseQueryString(parsedUrl.Query);
-                    string[] pluginParts = (queryParameters["plugin"] ?? "").Split(new[] { ';' }, 2);
-                    if (pluginParts.Length > 0)
-                    {
-                        server.plugin = pluginParts[0] ?? "";
-                    }
-
-                    if (pluginParts.Length > 1)
-                    {
-                        server.plugin_opts = pluginParts[1] ?? "";
-                    }
-
-                    servers.Add(server);
-                }
-            }
-            return servers;
         }
 
         public string Identifier()

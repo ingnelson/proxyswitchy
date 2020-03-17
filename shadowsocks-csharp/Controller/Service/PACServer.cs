@@ -7,10 +7,12 @@ using System.Net.Sockets;
 using System.Text;
 using System.Web;
 using NLog;
+using System.Net.NetworkInformation;
+using System.Linq;
 
 namespace Shadowsocks.Controller
 {
-    public class PACServer : Listener.Service
+    public class PACServer
     {
         private static Logger logger = LogManager.GetCurrentClassLogger();
 
@@ -34,6 +36,7 @@ namespace Shadowsocks.Controller
 
         private Configuration _config;
         private PACDaemon _pacDaemon;
+        private Socket _tcpSocket;
 
         public PACServer(PACDaemon pacDaemon)
         {
@@ -45,7 +48,7 @@ namespace Shadowsocks.Controller
             _config = config;
             string usedSecret = _config.secureLocalPac ? $"&secret={PacSecret}" : "";
             string contentHash = GetHash(_pacDaemon.GetPACContent());
-            PacUrl = $"http://{config.localHost}:{config.localPort}/{RESOURCE_NAME}?hash={contentHash}{usedSecret}";
+            PacUrl = $"http://{config.localHost}:{config.pacPort}/{RESOURCE_NAME}?hash={contentHash}{usedSecret}";
             logger.Debug("Set PAC URL:" + PacUrl);
         }
 
@@ -54,7 +57,7 @@ namespace Shadowsocks.Controller
             return HttpServerUtility.UrlTokenEncode(MbedTLS.MD5(Encoding.ASCII.GetBytes(content)));
         }
 
-        public override bool Handle(byte[] firstPacket, int length, Socket socket, object state)
+        public bool Handle(byte[] firstPacket, int length, Socket socket, object state)
         {
             if (socket.ProtocolType != ProtocolType.Tcp)
             {
@@ -163,7 +166,7 @@ namespace Shadowsocks.Controller
             {
                 IPEndPoint localEndPoint = (IPEndPoint)socket.LocalEndPoint;
 
-                string proxy = GetPACAddress(localEndPoint, useSocks);
+                string proxy = GetProxyAddress(localEndPoint, useSocks);
 
                 string pacContent = $"var __PROXY__ = '{proxy}';\n" + _pacDaemon.GetPACContent();
                 string responseHead =
@@ -196,12 +199,123 @@ Connection: Close
             { }
         }
 
-
-        private string GetPACAddress(IPEndPoint localEndPoint, bool useSocks)
+        private string GetProxyAddress(IPEndPoint localEndPoint, bool useSocks)
         {
             return localEndPoint.AddressFamily == AddressFamily.InterNetworkV6
                 ? $"{(useSocks ? "SOCKS5" : "PROXY")} [{localEndPoint.Address}]:{_config.localPort};"
                 : $"{(useSocks ? "SOCKS5" : "PROXY")} {localEndPoint.Address}:{_config.localPort};";
+        }
+
+        public void Start(Configuration config)
+        {
+            if (CheckIfPortInUse(_config.pacPort))
+                throw new Exception(I18N.GetString("Port {0} already in use", _config.pacPort));
+
+            try
+            {
+                // Create a TCP/IP socket.
+                _tcpSocket = new Socket(config.isIPv6Enabled ? AddressFamily.InterNetworkV6 : AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+                _tcpSocket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
+                IPEndPoint localEndPoint = null;
+                localEndPoint = config.shareOverLan
+                    ? new IPEndPoint(config.isIPv6Enabled ? IPAddress.IPv6Any : IPAddress.Any, _config.pacPort)
+                    : new IPEndPoint(config.isIPv6Enabled ? IPAddress.IPv6Loopback : IPAddress.Loopback, _config.pacPort);
+
+                // Bind the socket to the local endpoint and listen for incoming connections.
+                _tcpSocket.Bind(localEndPoint);
+                _tcpSocket.Listen(128);
+
+                // Start an asynchronous socket to listen for connections.
+                _tcpSocket.BeginAccept(new AsyncCallback(AcceptCallback), _tcpSocket);
+            }
+            catch (SocketException)
+            {
+                _tcpSocket.Close();
+                throw;
+            }
+
+        }
+
+        private void AcceptCallback(IAsyncResult ar)
+        {
+            Socket listener = (Socket)ar.AsyncState;
+            try
+            {
+                Socket conn = listener.EndAccept(ar);
+
+                byte[] buf = new byte[4096];
+                object[] state = new object[] {
+                    conn,
+                    buf
+                };
+
+                conn.BeginReceive(buf, 0, buf.Length, 0,
+                    new AsyncCallback(ReceiveCallback), state);
+            }
+            catch (ObjectDisposedException)
+            {
+            }
+            catch (Exception e)
+            {
+                logger.LogUsefulException(e);
+            }
+            finally
+            {
+                try
+                {
+                    listener.BeginAccept(
+                        new AsyncCallback(AcceptCallback),
+                        listener);
+                }
+                catch (ObjectDisposedException)
+                {
+                    // do nothing
+                }
+                catch (Exception e)
+                {
+                    logger.LogUsefulException(e);
+                }
+            }
+        }
+
+        private void ReceiveCallback(IAsyncResult ar)
+        {
+            object[] state = (object[])ar.AsyncState;
+
+            Socket conn = (Socket)state[0];
+            byte[] buf = (byte[])state[1];
+            try
+            {
+                int bytesRead = conn.EndReceive(ar);
+                if (bytesRead <= 0) goto Shutdown;
+                Handle(buf, bytesRead, conn, null);
+                Shutdown:
+                // no service found for this
+                if (conn.ProtocolType == ProtocolType.Tcp)
+                {
+                    conn.Close();
+                }
+            }
+            catch (Exception e)
+            {
+                logger.LogUsefulException(e);
+                conn.Close();
+            }
+        }
+
+        private bool CheckIfPortInUse(int port)
+        {
+            IPGlobalProperties ipProperties = IPGlobalProperties.GetIPGlobalProperties();
+            return ipProperties.GetActiveTcpListeners().Any(endPoint => endPoint.Port == port);
+        }
+
+        public void Stop()
+        {
+            if (_tcpSocket != null)
+            {
+                _tcpSocket.Close();
+                _tcpSocket = null;
+            }
         }
     }
 }

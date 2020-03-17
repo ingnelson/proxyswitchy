@@ -71,8 +71,6 @@ namespace Shadowsocks.View
             LogMessageTextBox.ForeColor = config.TextColor;
             LogMessageTextBox.Font = config.Font;
 
-            controller.TrafficChanged += controller_TrafficChanged;
-
             UpdateTexts();
         }
 
@@ -126,37 +124,6 @@ namespace Shadowsocks.View
                 trafficChart.Annotations.Clear();
                 trafficChart.Annotations.Add(inboundAnnotation);
                 trafficChart.Annotations.Add(outboundAnnotation);
-            }
-        }
-
-        private void controller_TrafficChanged(object sender, EventArgs e)
-        {
-            lock (_lock)
-            {
-                if (trafficInfoQueue.Count == 0)
-                {
-                    // Init an empty queue
-                    for (int i = 0; i < queueMaxLength; i++)
-                    {
-                        trafficInfoQueue.Enqueue(new TrafficInfo(0, 0));
-                    }
-
-                    foreach (var trafficPerSecond in controller.trafficPerSecondQueue)
-                    {
-                        trafficInfoQueue.Enqueue(new TrafficInfo(trafficPerSecond.inboundIncreasement,
-                                                                 trafficPerSecond.outboundIncreasement));
-                        if (trafficInfoQueue.Count > queueMaxLength)
-                            trafficInfoQueue.Dequeue();
-                    }
-                }
-                else
-                {
-                    var lastTraffic = controller.trafficPerSecondQueue.Last();
-                    trafficInfoQueue.Enqueue(new TrafficInfo(lastTraffic.inboundIncreasement,
-                                                             lastTraffic.outboundIncreasement));
-                    if (trafficInfoQueue.Count > queueMaxLength)
-                        trafficInfoQueue.Dequeue();
-                }
             }
         }
 
@@ -269,7 +236,6 @@ namespace Shadowsocks.View
         private void LogForm_FormClosing(object sender, FormClosingEventArgs e)
         {
             timer.Stop();
-            controller.TrafficChanged -= controller_TrafficChanged;
             LogViewerConfig config = controller.GetConfigurationCopy().logViewer;
 
             config.topMost = topMostTrigger;

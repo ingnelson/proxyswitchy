@@ -18,7 +18,6 @@ namespace Shadowsocks.Model
         public List<Server> configs;
 
         // when strategy is set, index is ignored
-        public string strategy;
         public int index;
         public bool global;
         public bool enabled;
@@ -26,6 +25,7 @@ namespace Shadowsocks.Model
         public bool isDefault;
         public bool isIPv6Enabled = false;
         public int localPort;
+        public int pacPort;
         public bool portableMode = true;
         public bool showPluginOutput;
         public string pacUrl;
@@ -38,8 +38,9 @@ namespace Shadowsocks.Model
         public bool isVerboseLogging;
         //public NLogConfig.LogLevel logLevel;
         public LogViewerConfig logViewer;
-        public ProxyConfig proxy;
-        public HotkeyConfig hotkey;
+
+        private static readonly int LOCAL_PORT = 20808;
+        private static readonly int PAC_PORT = 20807;
 
         [JsonIgnore]
         NLogConfig nLogConfig;
@@ -67,8 +68,6 @@ namespace Shadowsocks.Model
         {
             CheckServer(server.server);
             CheckPort(server.server_port);
-            CheckPassword(server.password);
-            CheckTimeout(server.timeout, Server.MaxServerTimeoutSec);
         }
 
         public static bool ChecksServer(Server server)
@@ -101,23 +100,18 @@ namespace Shadowsocks.Model
                 if (config.configs.Count == 0)
                     config.configs.Add(GetDefaultServer());
                 if (config.localPort == 0)
-                    config.localPort = 1080;
-                if (config.index == -1 && config.strategy == null)
+                    config.localPort = LOCAL_PORT;
+                if (config.pacPort == 0)
+                    config.pacPort = PAC_PORT;
+                if (config.index == -1)
                     config.index = 0;
                 if (config.logViewer == null)
                     config.logViewer = new LogViewerConfig();
-                if (config.proxy == null)
-                    config.proxy = new ProxyConfig();
-                if (config.hotkey == null)
-                    config.hotkey = new HotkeyConfig();
                 if (!System.Net.Sockets.Socket.OSSupportsIPv6)
                 {
                     config.isIPv6Enabled = false; // disable IPv6 if os not support
                 }
                 //TODO if remote host(server) do not support IPv6 (or DNS resolve AAAA TYPE record) disable IPv6?
-
-                config.proxy.CheckConfig();
-
                 try
                 {
                     config.nLogConfig = NLogConfig.LoadXML();
@@ -151,15 +145,13 @@ namespace Shadowsocks.Model
                 {
                     index = 0,
                     isDefault = true,
-                    localPort = 1080,
+                    localPort = 1091,
                     autoCheckUpdate = true,
                     configs = new List<Server>()
                     {
                         GetDefaultServer()
                     },
                     logViewer = new LogViewerConfig(),
-                    proxy = new ProxyConfig(),
-                    hotkey = new HotkeyConfig(),
                 };
             }
         }
@@ -171,7 +163,7 @@ namespace Shadowsocks.Model
                 config.index = config.configs.Count - 1;
             if (config.index < -1)
                 config.index = -1;
-            if (config.index == -1 && config.strategy == null)
+            if (config.index == -1)
                 config.index = 0;
             config.isDefault = false;
             try
@@ -239,23 +231,10 @@ namespace Shadowsocks.Model
                 throw new ArgumentException(I18N.GetString("Port can't be 8123"));
         }
 
-        private static void CheckPassword(string password)
-        {
-            if (password.IsNullOrEmpty())
-                throw new ArgumentException(I18N.GetString("Password can not be blank"));
-        }
-
         public static void CheckServer(string server)
         {
             if (server.IsNullOrEmpty())
                 throw new ArgumentException(I18N.GetString("Server IP can not be blank"));
-        }
-
-        public static void CheckTimeout(int timeout, int maxTimeout)
-        {
-            if (timeout <= 0 || timeout > maxTimeout)
-                throw new ArgumentException(
-                    I18N.GetString("Timeout is invalid, it should not exceed {0}", maxTimeout));
         }
 
         public static void CheckProxyAuthUser(string user)

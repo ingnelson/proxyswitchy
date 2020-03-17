@@ -7,7 +7,6 @@ using NLog;
 using Microsoft.Win32;
 
 using Shadowsocks.Controller;
-using Shadowsocks.Controller.Hotkeys;
 using Shadowsocks.Util;
 using Shadowsocks.View;
 
@@ -67,7 +66,6 @@ namespace Shadowsocks
                 SystemEvents.PowerModeChanged += SystemEvents_PowerModeChanged;
                 Application.EnableVisualStyles();
                 Application.SetCompatibleTextRenderingDefault(false);
-                AutoStartup.RegisterForRestart(true);
 
                 if (!mutex.WaitOne(0, false))
                 {
@@ -93,7 +91,6 @@ namespace Shadowsocks
                 MainController = new ShadowsocksController();
                 MenuController = new MenuViewController(MainController);
 
-                HotKeys.Init(MainController);
                 MainController.Start();
                 Application.Run();
             }
@@ -166,7 +163,6 @@ namespace Shadowsocks
             Application.ApplicationExit -= Application_ApplicationExit;
             SystemEvents.PowerModeChanged -= SystemEvents_PowerModeChanged;
             Application.ThreadException -= Application_ThreadException;
-            HotKeys.Destroy();
             if (MainController != null)
             {
                 MainController.Stop();
