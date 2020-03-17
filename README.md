@@ -3,7 +3,7 @@ I'm using shadowsocks,v2ray,trojan... on my Windows system, both of them support
 
 This tool is used to meet my above needs:
 
-<img src="preview" alt="preview"/>
+<img src="preview.png" alt="preview"/>
 
 # icon
 Icon made by [Pixel perfect[(https://www.flaticon.com/authors/pixel-perfect) from [www.flaticon.com](http://www.flaticon.com/).
