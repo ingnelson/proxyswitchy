@@ -6,11 +6,11 @@ using System.Runtime.InteropServices;
 // 有关程序集的常规信息通过下列属性集
 // 控制。更改这些属性值可修改
 // 与程序集关联的信息。
-[assembly: AssemblyTitle("Shadowsocks")]
+[assembly: AssemblyTitle("ProxySwitchy")]
 [assembly: AssemblyDescription("")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("")]
-[assembly: AssemblyProduct("Shadowsocks")]
+[assembly: AssemblyProduct("ProxySwitchy")]
 [assembly: AssemblyCopyright("clowwindy & community 2020")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
@@ -21,7 +21,7 @@ using System.Runtime.InteropServices;
 [assembly: ComVisible(false)]
 
 // 如果此项目向 COM 公开，则下列 GUID 用于类型库的 ID
-[assembly: Guid("f8334709-4309-436a-8bbd-6165dcf4a660")]
+[assembly: Guid("ffeb10c3-a920-40a8-8ef8-71a32e7a7efe")]
 
 // 程序集的版本信息由下面四个值组成:
 //
