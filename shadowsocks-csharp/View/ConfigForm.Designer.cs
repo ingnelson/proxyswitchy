@@ -56,8 +56,6 @@
             this.tableLayoutPanel4 = new System.Windows.Forms.TableLayoutPanel();
             this.DuplicateButton = new System.Windows.Forms.Button();
             this.toolTip1 = new System.Windows.Forms.ToolTip(this.components);
-            this.ProxyTypeLabel = new System.Windows.Forms.Label();
-            this.ProxyTypeSelect = new System.Windows.Forms.ComboBox();
             this.tableLayoutPanel1.SuspendLayout();
             this.ServerGroupBox.SuspendLayout();
             this.tableLayoutPanel2.SuspendLayout();
@@ -80,8 +78,6 @@
             this.tableLayoutPanel1.Controls.Add(this.IPTextBox, 1, 0);
             this.tableLayoutPanel1.Controls.Add(this.ServerPortTextBox, 1, 1);
             this.tableLayoutPanel1.Controls.Add(this.RemarksLabel, 0, 11);
-            this.tableLayoutPanel1.Controls.Add(this.ProxyTypeLabel, 0, 2);
-            this.tableLayoutPanel1.Controls.Add(this.ProxyTypeSelect, 1, 2);
             this.tableLayoutPanel1.Location = new System.Drawing.Point(10, 26);
             this.tableLayoutPanel1.Margin = new System.Windows.Forms.Padding(0);
             this.tableLayoutPanel1.Name = "tableLayoutPanel1";
@@ -100,13 +96,13 @@
             this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle());
             this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle());
             this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle());
-            this.tableLayoutPanel1.Size = new System.Drawing.Size(354, 138);
+            this.tableLayoutPanel1.Size = new System.Drawing.Size(354, 107);
             this.tableLayoutPanel1.TabIndex = 0;
             // 
             // RemarksTextBox
             // 
             this.RemarksTextBox.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right)));
-            this.RemarksTextBox.Location = new System.Drawing.Point(111, 105);
+            this.RemarksTextBox.Location = new System.Drawing.Point(111, 74);
             this.RemarksTextBox.Margin = new System.Windows.Forms.Padding(4);
             this.RemarksTextBox.MaxLength = 32;
             this.RemarksTextBox.Name = "RemarksTextBox";
@@ -162,7 +158,7 @@
             // 
             this.RemarksLabel.Anchor = System.Windows.Forms.AnchorStyles.Right;
             this.RemarksLabel.AutoSize = true;
-            this.RemarksLabel.Location = new System.Drawing.Point(40, 110);
+            this.RemarksLabel.Location = new System.Drawing.Point(40, 79);
             this.RemarksLabel.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.RemarksLabel.Name = "RemarksLabel";
             this.RemarksLabel.Size = new System.Drawing.Size(63, 15);
@@ -252,7 +248,7 @@
             this.ServerGroupBox.Margin = new System.Windows.Forms.Padding(15, 0, 0, 0);
             this.ServerGroupBox.Name = "ServerGroupBox";
             this.ServerGroupBox.Padding = new System.Windows.Forms.Padding(4);
-            this.ServerGroupBox.Size = new System.Drawing.Size(368, 186);
+            this.ServerGroupBox.Size = new System.Drawing.Size(368, 155);
             this.ServerGroupBox.TabIndex = 0;
             this.ServerGroupBox.TabStop = false;
             this.ServerGroupBox.Text = "Server";
@@ -289,7 +285,7 @@
             this.tableLayoutPanel2.RowStyles.Add(new System.Windows.Forms.RowStyle());
             this.tableLayoutPanel2.RowStyles.Add(new System.Windows.Forms.RowStyle());
             this.tableLayoutPanel2.RowStyles.Add(new System.Windows.Forms.RowStyle());
-            this.tableLayoutPanel2.Size = new System.Drawing.Size(591, 309);
+            this.tableLayoutPanel2.Size = new System.Drawing.Size(591, 307);
             this.tableLayoutPanel2.TabIndex = 7;
             // 
             // tableLayoutPanel6
@@ -302,7 +298,7 @@
             this.tableLayoutPanel6.Controls.Add(this.MoveDownButton, 1, 0);
             this.tableLayoutPanel6.Controls.Add(this.MoveUpButton, 0, 0);
             this.tableLayoutPanel6.Dock = System.Windows.Forms.DockStyle.Top;
-            this.tableLayoutPanel6.Location = new System.Drawing.Point(0, 268);
+            this.tableLayoutPanel6.Location = new System.Drawing.Point(0, 266);
             this.tableLayoutPanel6.Margin = new System.Windows.Forms.Padding(0);
             this.tableLayoutPanel6.Name = "tableLayoutPanel6";
             this.tableLayoutPanel6.RowCount = 1;
@@ -346,7 +342,7 @@
             this.tableLayoutPanel5.Controls.Add(this.ProxyPortTextBox, 1, 0);
             this.tableLayoutPanel5.Controls.Add(this.ProxyPortLabel, 0, 0);
             this.tableLayoutPanel5.Controls.Add(this.PortableModeCheckBox, 0, 1);
-            this.tableLayoutPanel5.Location = new System.Drawing.Point(208, 186);
+            this.tableLayoutPanel5.Location = new System.Drawing.Point(208, 184);
             this.tableLayoutPanel5.Margin = new System.Windows.Forms.Padding(0);
             this.tableLayoutPanel5.Name = "tableLayoutPanel5";
             this.tableLayoutPanel5.Padding = new System.Windows.Forms.Padding(4);
@@ -405,7 +401,7 @@
             this.tableLayoutPanel3.Controls.Add(this.OKButton, 0, 0);
             this.tableLayoutPanel3.Controls.Add(this.ApplyButton, 2, 0);
             this.tableLayoutPanel3.Dock = System.Windows.Forms.DockStyle.Right;
-            this.tableLayoutPanel3.Location = new System.Drawing.Point(289, 272);
+            this.tableLayoutPanel3.Location = new System.Drawing.Point(289, 270);
             this.tableLayoutPanel3.Margin = new System.Windows.Forms.Padding(4, 4, 0, 4);
             this.tableLayoutPanel3.Name = "tableLayoutPanel3";
             this.tableLayoutPanel3.RowCount = 1;
@@ -424,7 +420,7 @@
             this.tableLayoutPanel4.Controls.Add(this.DeleteButton, 1, 0);
             this.tableLayoutPanel4.Controls.Add(this.AddButton, 0, 0);
             this.tableLayoutPanel4.Dock = System.Windows.Forms.DockStyle.Top;
-            this.tableLayoutPanel4.Location = new System.Drawing.Point(0, 186);
+            this.tableLayoutPanel4.Location = new System.Drawing.Point(0, 184);
             this.tableLayoutPanel4.Margin = new System.Windows.Forms.Padding(0);
             this.tableLayoutPanel4.Name = "tableLayoutPanel4";
             this.tableLayoutPanel4.RowCount = 2;
@@ -444,32 +440,6 @@
             this.DuplicateButton.Text = "Dupli&cate";
             this.DuplicateButton.UseVisualStyleBackColor = true;
             this.DuplicateButton.Click += new System.EventHandler(this.DuplicateButton_Click);
-            // 
-            // ProxyTypeLabel
-            // 
-            this.ProxyTypeLabel.Anchor = System.Windows.Forms.AnchorStyles.Right;
-            this.ProxyTypeLabel.AutoSize = true;
-            this.ProxyTypeLabel.Location = new System.Drawing.Point(16, 78);
-            this.ProxyTypeLabel.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
-            this.ProxyTypeLabel.Name = "ProxyTypeLabel";
-            this.ProxyTypeLabel.Size = new System.Drawing.Size(87, 15);
-            this.ProxyTypeLabel.TabIndex = 9;
-            this.ProxyTypeLabel.Text = "Proxy Type";
-            this.ProxyTypeLabel.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
-            // 
-            // ProxyTypeSelect
-            // 
-            this.ProxyTypeSelect.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.ProxyTypeSelect.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
-            this.ProxyTypeSelect.FormattingEnabled = true;
-            this.ProxyTypeSelect.ImeMode = System.Windows.Forms.ImeMode.NoControl;
-            this.ProxyTypeSelect.ItemHeight = 15;
-            this.ProxyTypeSelect.Location = new System.Drawing.Point(111, 74);
-            this.ProxyTypeSelect.Margin = new System.Windows.Forms.Padding(4);
-            this.ProxyTypeSelect.Name = "ProxyTypeSelect";
-            this.ProxyTypeSelect.Size = new System.Drawing.Size(235, 23);
-            this.ProxyTypeSelect.TabIndex = 10;
             // 
             // ConfigForm
             // 
@@ -538,8 +508,6 @@
         private System.Windows.Forms.Button DuplicateButton;
         private System.Windows.Forms.ToolTip toolTip1;
         private System.Windows.Forms.CheckBox PortableModeCheckBox;
-        private System.Windows.Forms.Label ProxyTypeLabel;
-        private System.Windows.Forms.ComboBox ProxyTypeSelect;
     }
 }
 

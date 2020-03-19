@@ -142,15 +142,6 @@
   <data name="ss32Fill" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Resources\ss32Fill.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
-  <data name="ss32In" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\ss32In.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
-  </data>
-  <data name="ss32Out" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\ss32Out.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
-  </data>
-  <data name="ss32Outline" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\ss32Outline.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
-  </data>
   <data name="ssw128" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Resources\ssw128.png;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>

@@ -12,8 +12,7 @@ namespace Shadowsocks.Model
     public class Server
     {
         public const string DefaultServer = "127.0.0.1";
-        public const int DefaultPort = 1090;
-        public const string DefaultProxyType = "SOCKS5";
+        public const int DefaultPort = 1080;
 
         #region ParseLegacyURL
         public static readonly Regex
@@ -26,7 +25,6 @@ namespace Shadowsocks.Model
 
         public string server;
         public int server_port;
-        public string proxy_type;
         public string remarks;
 
         public override int GetHashCode()
@@ -69,38 +67,7 @@ namespace Shadowsocks.Model
         {
             server = DefaultServer;
             server_port = DefaultPort;
-            proxy_type = DefaultProxyType;
             remarks = "";
-        }
-
-        private static Server ParseLegacyURL(string ssURL)
-        {
-            var match = UrlFinder.Match(ssURL);
-            if (!match.Success)
-                return null;
-
-            Server server = new Server();
-            var base64 = match.Groups["base64"].Value.TrimEnd('/');
-            var tag = match.Groups["tag"].Value;
-            if (!tag.IsNullOrEmpty())
-            {
-                server.remarks = HttpUtility.UrlDecode(tag, Encoding.UTF8);
-            }
-            Match details = null;
-            try
-            {
-                details = DetailsParser.Match(Encoding.UTF8.GetString(Convert.FromBase64String(
-                base64.PadRight(base64.Length + (4 - base64.Length % 4) % 4, '='))));
-            }
-            catch (FormatException)
-            {
-                return null;
-            }
-            if (!details.Success)
-                return null;
-            server.server = details.Groups["hostname"].Value;
-            server.server_port = int.Parse(details.Groups["port"].Value);
-            return server;
         }
 
         public string Identifier()

@@ -25,7 +25,6 @@ namespace Shadowsocks.View
         {
             Font = SystemFonts.MessageBoxFont;
             InitializeComponent();
-            ProxyTypeSelect.Items.AddRange(proxyTypes);
 
             // a dirty hack
             ServersListBox.Dock = DockStyle.Fill;
@@ -55,7 +54,6 @@ namespace Shadowsocks.View
             RemarksTextBox.TextChanged += ConfigValueChanged;
             PortableModeCheckBox.CheckedChanged += ConfigValueChanged;
             ServerPortTextBox.TextChanged += ConfigValueChanged;
-            ProxyTypeSelect.SelectedIndexChanged += ConfigValueChanged;
         }
 
         private void Controller_ConfigChanged(object sender, EventArgs e)
@@ -110,7 +108,6 @@ namespace Shadowsocks.View
                 {
                     server = address,
                     server_port = addressPort.Value,
-                    proxy_type = ProxyTypeSelect.SelectedItem.ToString(),
                     remarks = RemarksTextBox.Text,
                 };
 
@@ -229,7 +226,6 @@ namespace Shadowsocks.View
         {
             IPTextBox.Text = server.server;
             ServerPortTextBox.Text = server.server_port.ToString();
-            ProxyTypeSelect.SelectedItem = Server.DefaultProxyType;
             RemarksTextBox.Text = server.remarks;
 
             isChange = false;

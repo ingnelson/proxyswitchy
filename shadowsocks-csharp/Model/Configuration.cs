@@ -25,7 +25,6 @@ namespace Shadowsocks.Model
         public bool isDefault;
         public bool isIPv6Enabled = false;
         public int localPort;
-        public int pacPort;
         public bool portableMode = true;
         public bool showPluginOutput;
         public string pacUrl;
@@ -39,8 +38,7 @@ namespace Shadowsocks.Model
         //public NLogConfig.LogLevel logLevel;
         public LogViewerConfig logViewer;
 
-        private static readonly int LOCAL_PORT = 20808;
-        private static readonly int PAC_PORT = 20807;
+        private const int DefaultLocalPort = 1081;
 
         [JsonIgnore]
         NLogConfig nLogConfig;
@@ -90,19 +88,13 @@ namespace Shadowsocks.Model
                 string configContent = File.ReadAllText(CONFIG_FILE);
                 Configuration config = JsonConvert.DeserializeObject<Configuration>(configContent);
                 config.isDefault = false;
-                if (UpdateChecker.Asset.CompareVersion(UpdateChecker.Version, config.version ?? "0") > 0)
-                {
-                    config.updated = true;
-                }
 
                 if (config.configs == null)
                     config.configs = new List<Server>();
                 if (config.configs.Count == 0)
                     config.configs.Add(GetDefaultServer());
                 if (config.localPort == 0)
-                    config.localPort = LOCAL_PORT;
-                if (config.pacPort == 0)
-                    config.pacPort = PAC_PORT;
+                    config.localPort = DefaultLocalPort;
                 if (config.index == -1)
                     config.index = 0;
                 if (config.logViewer == null)
@@ -145,7 +137,7 @@ namespace Shadowsocks.Model
                 {
                     index = 0,
                     isDefault = true,
-                    localPort = 1091,
+                    localPort = DefaultLocalPort,
                     autoCheckUpdate = true,
                     configs = new List<Server>()
                     {

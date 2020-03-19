@@ -36,7 +36,8 @@ namespace Shadowsocks.Controller
 
         private Configuration _config;
         private PACDaemon _pacDaemon;
-        private Socket _tcpSocket;
+        private int runningPort;
+        private Socket tcpSocket;
 
         public PACServer(PACDaemon pacDaemon)
         {
@@ -48,7 +49,7 @@ namespace Shadowsocks.Controller
             _config = config;
             string usedSecret = _config.secureLocalPac ? $"&secret={PacSecret}" : "";
             string contentHash = GetHash(_pacDaemon.GetPACContent());
-            PacUrl = $"http://{config.localHost}:{config.pacPort}/{RESOURCE_NAME}?hash={contentHash}{usedSecret}";
+            PacUrl = $"http://{config.localHost}:{runningPort}/{RESOURCE_NAME}?hash={contentHash}{usedSecret}";
             logger.Debug("Set PAC URL:" + PacUrl);
         }
 
@@ -208,29 +209,30 @@ Connection: Close
 
         public void Start(Configuration config)
         {
-            if (CheckIfPortInUse(_config.pacPort))
-                throw new Exception(I18N.GetString("Port {0} already in use", _config.pacPort));
+            runningPort = GetFreePort(config.isIPv6Enabled);
+            if (CheckIfPortInUse(runningPort))
+                throw new Exception(I18N.GetString("Port {0} already in use", runningPort));
 
             try
             {
                 // Create a TCP/IP socket.
-                _tcpSocket = new Socket(config.isIPv6Enabled ? AddressFamily.InterNetworkV6 : AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-                _tcpSocket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
+                tcpSocket = new Socket(config.isIPv6Enabled ? AddressFamily.InterNetworkV6 : AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+                tcpSocket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
                 IPEndPoint localEndPoint = null;
                 localEndPoint = config.shareOverLan
-                    ? new IPEndPoint(config.isIPv6Enabled ? IPAddress.IPv6Any : IPAddress.Any, _config.pacPort)
-                    : new IPEndPoint(config.isIPv6Enabled ? IPAddress.IPv6Loopback : IPAddress.Loopback, _config.pacPort);
+                    ? new IPEndPoint(config.isIPv6Enabled ? IPAddress.IPv6Any : IPAddress.Any, runningPort)
+                    : new IPEndPoint(config.isIPv6Enabled ? IPAddress.IPv6Loopback : IPAddress.Loopback, runningPort);
 
                 // Bind the socket to the local endpoint and listen for incoming connections.
-                _tcpSocket.Bind(localEndPoint);
-                _tcpSocket.Listen(128);
+                tcpSocket.Bind(localEndPoint);
+                tcpSocket.Listen(128);
 
                 // Start an asynchronous socket to listen for connections.
-                _tcpSocket.BeginAccept(new AsyncCallback(AcceptCallback), _tcpSocket);
+                tcpSocket.BeginAccept(new AsyncCallback(AcceptCallback), tcpSocket);
             }
             catch (SocketException)
             {
-                _tcpSocket.Close();
+                tcpSocket.Close();
                 throw;
             }
 
@@ -311,10 +313,30 @@ Connection: Close
 
         public void Stop()
         {
-            if (_tcpSocket != null)
+            if (tcpSocket != null)
             {
-                _tcpSocket.Close();
-                _tcpSocket = null;
+                tcpSocket.Close();
+                tcpSocket = null;
+            }
+        }
+
+        private int GetFreePort(bool isIPv6 = false)
+        {
+            int defaultPort = 8123;
+            try
+            {
+                // TCP stack please do me a favor
+                TcpListener l = new TcpListener(isIPv6 ? IPAddress.IPv6Loopback : IPAddress.Loopback, 0);
+                l.Start();
+                var port = ((IPEndPoint)l.LocalEndpoint).Port;
+                l.Stop();
+                return port;
+            }
+            catch (Exception e)
+            {
+                // in case access denied
+                logger.LogUsefulException(e);
+                return defaultPort;
             }
         }
     }

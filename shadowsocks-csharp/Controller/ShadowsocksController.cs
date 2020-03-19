@@ -26,8 +26,6 @@ namespace Shadowsocks.Controller
         private PrivoxyRunner privoxyRunner;
         private GFWListUpdater gfwListUpdater;
 
-        public StatisticsStrategyConfiguration StatisticsConfiguration { get; private set; }
-
         private long _inboundCounter = 0;
         private long _outboundCounter = 0;
         public long InboundCounter => Interlocked.Read(ref _inboundCounter);
@@ -69,7 +67,6 @@ namespace Shadowsocks.Controller
         public ShadowsocksController()
         {
             _config = Configuration.Load();
-            StatisticsConfiguration = StatisticsStrategyConfiguration.Load();
             StartReleasingMemory();
 
             ProgramUpdated += (o, e) =>
@@ -121,12 +118,6 @@ namespace Shadowsocks.Controller
             _config.localPort = localPort;
             _config.portableMode = portableMode;
             Configuration.Save(_config);
-        }
-
-        public void SaveStrategyConfigurations(StatisticsStrategyConfiguration configuration)
-        {
-            StatisticsConfiguration = configuration;
-            StatisticsStrategyConfiguration.Save(configuration);
         }
 
         public void ToggleEnable(bool enabled)
@@ -278,8 +269,6 @@ namespace Shadowsocks.Controller
             _config = Configuration.Load();
 
             NLogConfig.LoadConfiguration();
-
-            StatisticsConfiguration = StatisticsStrategyConfiguration.Load();
 
             privoxyRunner = privoxyRunner ?? new PrivoxyRunner();
 

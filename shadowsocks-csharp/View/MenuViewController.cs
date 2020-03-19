@@ -20,13 +20,11 @@ namespace Shadowsocks.View
         // and it should just do anything related to the config form
 
         private ShadowsocksController controller;
-        private UpdateChecker updateChecker;
 
         private NotifyIcon _notifyIcon;
-        private Icon icon, icon_in, icon_out, icon_both, previousIcon;
+        private Icon icon, previousIcon;
 
         private bool _isFirstRun;
-        private bool _isStartupChecking;
 
         private ContextMenu contextMenu1;
         private MenuItem disableItem;
@@ -43,14 +41,9 @@ namespace Shadowsocks.View
         private MenuItem editGFWUserRuleItem;
         private MenuItem editOnlinePACItem;
         private MenuItem secureLocalPacUrlToggleItem;
-        private MenuItem autoCheckUpdatesToggleItem;
-        private MenuItem checkPreReleaseToggleItem;
         private MenuItem VerboseLoggingToggleItem;
-        private MenuItem ShowPluginOutputToggleItem;
         private ConfigForm configForm;
         private LogForm logForm;
-
-
 
         // color definition for icon color transformation
         private readonly Color colorMaskBlue = Color.FromArgb(255, 25, 125, 191);
@@ -70,7 +63,6 @@ namespace Shadowsocks.View
             controller.UserRuleFileReadyToOpen += controller_FileReadyToOpen;
             controller.ShareOverLANStatusChanged += controller_ShareOverLANStatusChanged;
             controller.VerboseLoggingStatusChanged += controller_VerboseLoggingStatusChanged;
-            controller.ShowPluginOutputChanged += controller_ShowPluginOutputChanged;
             controller.EnableGlobalChanged += controller_EnableGlobalChanged;
             controller.Errored += controller_Errored;
             controller.UpdatePACFromGFWListCompleted += controller_UpdatePACFromGFWListCompleted;
@@ -85,9 +77,6 @@ namespace Shadowsocks.View
             _notifyIcon.MouseDoubleClick += notifyIcon1_DoubleClick;
             _notifyIcon.BalloonTipClosed += _notifyIcon_BalloonTipClosed;
 
-            this.updateChecker = new UpdateChecker();
-            updateChecker.CheckUpdateCompleted += updateChecker_CheckUpdateCompleted;
-
             LoadCurrentConfiguration();
 
             Configuration config = controller.GetConfigurationCopy();
@@ -96,11 +85,6 @@ namespace Shadowsocks.View
             {
                 _isFirstRun = true;
                 ShowConfigForm();
-            }
-            else if (config.autoCheckUpdate)
-            {
-                _isStartupChecking = true;
-                updateChecker.CheckUpdate(config, 3000);
             }
         }
 
@@ -120,7 +104,7 @@ namespace Shadowsocks.View
             Color colorMask = SelectColorMask(enabled, global);
             Size iconSize = SelectIconSize();
 
-            UpdateIconSet(colorMask, iconSize, out icon, out icon_in, out icon_out, out icon_both);
+            UpdateIconSet(colorMask, iconSize, out icon);
 
             previousIcon = icon;
             _notifyIcon.Icon = previousIcon;
@@ -209,7 +193,7 @@ namespace Shadowsocks.View
         }
 
         private void UpdateIconSet(Color colorMask, Size size,
-            out Icon icon, out Icon icon_in, out Icon icon_out, out Icon icon_both)
+            out Icon icon)
         {
             Bitmap iconBitmap;
 
@@ -218,9 +202,6 @@ namespace Shadowsocks.View
             iconBitmap = ViewUtils.AddBitmapOverlay(iconBitmap);
 
             icon = Icon.FromHandle(ViewUtils.ResizeBitmap(iconBitmap, size.Width, size.Height).GetHicon());
-            icon_in = Icon.FromHandle(ViewUtils.ResizeBitmap(ViewUtils.AddBitmapOverlay(iconBitmap, Resources.ss32In), size.Width, size.Height).GetHicon());
-            icon_out = Icon.FromHandle(ViewUtils.ResizeBitmap(ViewUtils.AddBitmapOverlay(iconBitmap, Resources.ss32In), size.Width, size.Height).GetHicon());
-            icon_both = Icon.FromHandle(ViewUtils.ResizeBitmap(ViewUtils.AddBitmapOverlay(iconBitmap, Resources.ss32In, Resources.ss32Out), size.Width, size.Height).GetHicon());
         }
 
 
@@ -250,7 +231,6 @@ namespace Shadowsocks.View
                 this.ServersItem = CreateMenuGroup("Servers", new MenuItem[] {
                     this.SeperatorItem = new MenuItem("-"),
                     this.ConfigItem = CreateMenuItem("Edit Servers...", new EventHandler(this.Config_Click)),
-                    new MenuItem("-"),
                 }),
                 CreateMenuGroup("PAC ", new MenuItem[] {
                     this.localPACItem = CreateMenuItem("Local PAC", new EventHandler(this.LocalPACItem_Click)),
@@ -269,13 +249,6 @@ namespace Shadowsocks.View
                 CreateMenuGroup("Help", new MenuItem[] {
                     CreateMenuItem("Show Logs...", new EventHandler(this.ShowLogItem_Click)),
                     this.VerboseLoggingToggleItem = CreateMenuItem( "Verbose Logging", new EventHandler(this.VerboseLoggingToggleItem_Click) ),
-                    this.ShowPluginOutputToggleItem = CreateMenuItem("Show Plugin Output", new EventHandler(this.ShowPluginOutputToggleItem_Click)),
-                    CreateMenuGroup("Updates...", new MenuItem[] {
-                        CreateMenuItem("Check for Updates...", new EventHandler(this.checkUpdatesItem_Click)),
-                        new MenuItem("-"),
-                        this.autoCheckUpdatesToggleItem = CreateMenuItem("Check for Updates at Startup", new EventHandler(this.autoCheckUpdatesToggleItem_Click)),
-                        this.checkPreReleaseToggleItem = CreateMenuItem("Check Pre-release Version", new EventHandler(this.checkPreReleaseToggleItem_Click)),
-                    }),
                     CreateMenuItem("About...", new EventHandler(this.AboutItem_Click)),
                 }),
                 new MenuItem("-"),
@@ -304,11 +277,6 @@ namespace Shadowsocks.View
         void controller_VerboseLoggingStatusChanged(object sender, EventArgs e)
         {
             VerboseLoggingToggleItem.Checked = controller.GetConfigurationCopy().isVerboseLogging;
-        }
-
-        void controller_ShowPluginOutputChanged(object sender, EventArgs e)
-        {
-            ShowPluginOutputToggleItem.Checked = controller.GetConfigurationCopy().showPluginOutput;
         }
 
         void controller_EnableGlobalChanged(object sender, EventArgs e)
@@ -346,38 +314,12 @@ namespace Shadowsocks.View
             ShowBalloonTip(I18N.GetString("Shadowsocks"), result, ToolTipIcon.Info, 1000);
         }
 
-        void updateChecker_CheckUpdateCompleted(object sender, EventArgs e)
-        {
-            if (updateChecker.NewVersionFound)
-            {
-                ShowBalloonTip(I18N.GetString("Shadowsocks {0} Update Found", updateChecker.LatestVersionNumber + updateChecker.LatestVersionSuffix), I18N.GetString("Click here to update"), ToolTipIcon.Info, 5000);
-            }
-            else if (!_isStartupChecking)
-            {
-                ShowBalloonTip(I18N.GetString("Shadowsocks"), I18N.GetString("No update is available"), ToolTipIcon.Info, 5000);
-            }
-            _isStartupChecking = false;
-        }
-
         void notifyIcon1_BalloonTipClicked(object sender, EventArgs e)
         {
-            if (updateChecker.NewVersionFound)
-            {
-                updateChecker.NewVersionFound = false; /* Reset the flag */
-                if (File.Exists(updateChecker.LatestVersionLocalName))
-                {
-                    string argument = "/select, \"" + updateChecker.LatestVersionLocalName + "\"";
-                    Process.Start("explorer.exe", argument);
-                }
-            }
         }
 
         private void _notifyIcon_BalloonTipClosed(object sender, EventArgs e)
         {
-            if (updateChecker.NewVersionFound)
-            {
-                updateChecker.NewVersionFound = false; /* Reset the flag */
-            }
         }
 
         private void LoadCurrentConfiguration()
@@ -387,12 +329,10 @@ namespace Shadowsocks.View
             UpdateSystemProxyItemsEnabledStatus(config);
             ShareOverLANItem.Checked = config.shareOverLan;
             VerboseLoggingToggleItem.Checked = config.isVerboseLogging;
-            ShowPluginOutputToggleItem.Checked = config.showPluginOutput;
             onlinePACItem.Checked = onlinePACItem.Enabled && config.useOnlinePac;
             localPACItem.Checked = !onlinePACItem.Checked;
             secureLocalPacUrlToggleItem.Checked = config.secureLocalPac;
             UpdatePACItemsEnabledStatus();
-            UpdateUpdateMenu();
         }
 
         private void UpdateServersMenu()
@@ -470,7 +410,6 @@ namespace Shadowsocks.View
             Utils.ReleaseMemory(true);
             if (_isFirstRun)
             {
-                CheckUpdateForFirstRun();
                 ShowBalloonTip(
                     I18N.GetString("Shadowsocks is here"),
                     I18N.GetString("You can turn on/off Shadowsocks in the context menu"),
@@ -491,14 +430,6 @@ namespace Shadowsocks.View
             controller.Stop();
             _notifyIcon.Visible = false;
             Application.Exit();
-        }
-
-        private void CheckUpdateForFirstRun()
-        {
-            Configuration config = controller.GetConfigurationCopy();
-            if (config.isDefault) return;
-            _isStartupChecking = true;
-            updateChecker.CheckUpdate(config, 3000);
         }
 
         private void AboutItem_Click(object sender, EventArgs e)
@@ -600,12 +531,6 @@ namespace Shadowsocks.View
             controller.ToggleVerboseLogging(VerboseLoggingToggleItem.Checked);
         }
 
-        private void ShowPluginOutputToggleItem_Click(object sender, EventArgs e)
-        {
-            ShowPluginOutputToggleItem.Checked = !ShowPluginOutputToggleItem.Checked;
-            controller.ToggleShowPluginOutput(ShowPluginOutputToggleItem.Checked);
-        }
-
         private void WriteI18NFileItem_Click(object sender, EventArgs e)
         {
             File.WriteAllText(I18N.I18N_FILE, Resources.i18n_csv, Encoding.UTF8);
@@ -685,33 +610,6 @@ namespace Shadowsocks.View
                 this.editGFWUserRuleItem.Enabled = false;
                 this.editOnlinePACItem.Enabled = true;
             }
-        }
-
-
-        private void UpdateUpdateMenu()
-        {
-            Configuration configuration = controller.GetConfigurationCopy();
-            autoCheckUpdatesToggleItem.Checked = configuration.autoCheckUpdate;
-            checkPreReleaseToggleItem.Checked = configuration.checkPreRelease;
-        }
-
-        private void autoCheckUpdatesToggleItem_Click(object sender, EventArgs e)
-        {
-            Configuration configuration = controller.GetConfigurationCopy();
-            controller.ToggleCheckingUpdate(!configuration.autoCheckUpdate);
-            UpdateUpdateMenu();
-        }
-
-        private void checkPreReleaseToggleItem_Click(object sender, EventArgs e)
-        {
-            Configuration configuration = controller.GetConfigurationCopy();
-            controller.ToggleCheckingPreRelease(!configuration.checkPreRelease);
-            UpdateUpdateMenu();
-        }
-
-        private void checkUpdatesItem_Click(object sender, EventArgs e)
-        {
-            updateChecker.CheckUpdate(controller.GetConfigurationCopy());
         }
 
         private void ShowLogItem_Click(object sender, EventArgs e)

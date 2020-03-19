@@ -18,6 +18,9 @@ namespace Shadowsocks.Controller
     {
         private static Logger logger = LogManager.GetCurrentClassLogger();
 
+        private const string PrivoxyProcessName = "ss_privoxy";
+        private const string PrivoxyFileName = PrivoxyProcessName + ".exe";
+
         private static int _uid;
         private static string _uniqueConfigFile;
         private static Job _privoxyJob;
@@ -32,15 +35,13 @@ namespace Shadowsocks.Controller
                 _uniqueConfigFile = $"privoxy_{_uid}.conf";
                 _privoxyJob = new Job();
 
-                FileManager.UncompressFile(Utils.GetTempPath("ss_privoxy.exe"), Resources.privoxy_exe);
+                FileManager.UncompressFile(Utils.GetTempPath(PrivoxyFileName), Resources.privoxy_exe);
             }
             catch (IOException e)
             {
                 logger.LogUsefulException(e);
             }
         }
-
-        public int RunningPort => _runningPort;
 
         public void Start(ShadowsocksController shadowsocksController, Configuration configuration)
         {
@@ -58,9 +59,8 @@ namespace Shadowsocks.Controller
                 privoxyConfig = privoxyConfig.Replace("__PRIVOXY_BIND_PORT__", _runningPort.ToString());
                 privoxyConfig = configuration.isIPv6Enabled
                     ? privoxyConfig.Replace("__PRIVOXY_BIND_IP__", configuration.shareOverLan ? "[::]" : "[::1]")
-                    .Replace("__SOCKS_HOST__", "[::1]")
-                    : privoxyConfig.Replace("__PRIVOXY_BIND_IP__", configuration.shareOverLan ? "0.0.0.0" : "127.0.0.1")
-                    .Replace("__SOCKS_HOST__", "127.0.0.1");
+                    : privoxyConfig.Replace("__PRIVOXY_BIND_IP__", configuration.shareOverLan ? "0.0.0.0" : "127.0.0.1");
+                privoxyConfig = privoxyConfig.Replace("__SOCKS_HOST__", server.server);
                 FileManager.ByteArrayToFile(Utils.GetTempPath(_uniqueConfigFile), Encoding.UTF8.GetBytes(privoxyConfig));
 
                 _process = new Process
@@ -68,7 +68,7 @@ namespace Shadowsocks.Controller
                     // Configure the process using the StartInfo properties.
                     StartInfo =
                     {
-                        FileName = "ss_privoxy.exe",
+                        FileName = PrivoxyFileName,
                         Arguments = _uniqueConfigFile,
                         WorkingDirectory = Utils.GetTempPath(),
                         WindowStyle = ProcessWindowStyle.Hidden,
@@ -133,7 +133,7 @@ namespace Shadowsocks.Controller
                  */
                 var path = process.MainModule.FileName;
 
-                return Utils.GetTempPath("ss_privoxy.exe").Equals(path);
+                return Utils.GetTempPath(PrivoxyFileName).Equals(path);
 
             }
             catch (Exception ex)
@@ -145,26 +145,6 @@ namespace Shadowsocks.Controller
                  */
                 logger.LogUsefulException(ex);
                 return false;
-            }
-        }
-
-        private int GetFreePort(bool isIPv6 = false)
-        {
-            int defaultPort = 8123;
-            try
-            {
-                // TCP stack please do me a favor
-                TcpListener l = new TcpListener(isIPv6 ? IPAddress.IPv6Loopback : IPAddress.Loopback, 0);
-                l.Start();
-                var port = ((IPEndPoint)l.LocalEndpoint).Port;
-                l.Stop();
-                return port;
-            }
-            catch (Exception e)
-            {
-                // in case access denied
-                logger.LogUsefulException(e);
-                return defaultPort;
             }
         }
     }
