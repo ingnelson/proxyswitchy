@@ -19,8 +19,6 @@ namespace Shadowsocks.View
 
         private bool isChange = false;
 
-        private static readonly String[] proxyTypes = {"SOCKS5", "HTTP"};
-
         public ConfigForm(ShadowsocksController controller)
         {
             Font = SystemFonts.MessageBoxFont;
