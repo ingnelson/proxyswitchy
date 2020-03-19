@@ -1,7 +1,7 @@
-# proxyswitchy-windows
+# proxyswitchy
 I'm using shadowsocks,v2ray,trojan... on my Windows system, both of them support a local SOCKS5 proxy. 
 
-I always use cli instead of gui because of security, but i need a gui tool to switch system proxy environment and provide a port-persistence http proxy unrelated socks provider.
+I always use cli instead of gui because of security, but i need a gui tool to switch system proxy environment and provide a port-persistence http proxy unrelated socks provider(for git,go,bash,switchyohmega,npm,pip...).
 
 This tool is used to meet my above needs:
 
