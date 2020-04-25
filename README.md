@@ -7,5 +7,7 @@ This tool is used to meet my above needs:
 
 <img src="preview.png" alt="preview"/>
 
-# icon
+# Copyright
+This project is based on [shadowsocks-windows](https://github.com/shadowsocks/shadowsocks-windows).
+
 Icon made by [Pixel perfect](https://www.flaticon.com/authors/pixel-perfect) from [www.flaticon.com](http://www.flaticon.com/).
