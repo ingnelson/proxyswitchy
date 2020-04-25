@@ -36,8 +36,11 @@ namespace Shadowsocks.Controller
 
         private Configuration _config;
         private PACDaemon _pacDaemon;
-        private int runningPort;
-        private Socket tcpSocket;
+
+        // Now, pac address and pac port is not controlled by config directly, but the furture is not sure.
+        private IPAddress _pacAddress;
+        private int _pacPort;
+        private Socket _tcpSocket;
 
         public PACServer(PACDaemon pacDaemon)
         {
@@ -49,7 +52,7 @@ namespace Shadowsocks.Controller
             _config = config;
             string usedSecret = _config.secureLocalPac ? $"&secret={PacSecret}" : "";
             string contentHash = GetHash(_pacDaemon.GetPACContent());
-            PacUrl = $"http://{config.localHost}:{runningPort}/{RESOURCE_NAME}?hash={contentHash}{usedSecret}";
+            PacUrl = $"http://{config.localHost}:{_pacPort}/{RESOURCE_NAME}?hash={contentHash}{usedSecret}";
             logger.Debug("Set PAC URL:" + PacUrl);
         }
 
@@ -209,33 +212,36 @@ Connection: Close
 
         public void Start(Configuration config)
         {
-            runningPort = GetFreePort(config.isIPv6Enabled);
-            if (CheckIfPortInUse(runningPort))
-                throw new Exception(I18N.GetString("Port {0} already in use", runningPort));
+            _pacPort = GetFreePort(config.isIPv6Enabled);
+            if (CheckIfPortInUse(_pacPort))
+                throw new Exception(I18N.GetString("Port {0} already in use", _pacPort));
+
+            _pacAddress = config.shareOverLan
+                ? (config.isIPv6Enabled ? IPAddress.IPv6Any : IPAddress.Any)
+                : (config.isIPv6Enabled ? IPAddress.IPv6Loopback : IPAddress.Loopback);
+
+            //Update pac url before start pac web service.
+            UpdatePACURL(config);
 
             try
             {
                 // Create a TCP/IP socket.
-                tcpSocket = new Socket(config.isIPv6Enabled ? AddressFamily.InterNetworkV6 : AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-                tcpSocket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
-                IPEndPoint localEndPoint = null;
-                localEndPoint = config.shareOverLan
-                    ? new IPEndPoint(config.isIPv6Enabled ? IPAddress.IPv6Any : IPAddress.Any, runningPort)
-                    : new IPEndPoint(config.isIPv6Enabled ? IPAddress.IPv6Loopback : IPAddress.Loopback, runningPort);
+                _tcpSocket = new Socket(config.isIPv6Enabled ? AddressFamily.InterNetworkV6 : AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+                _tcpSocket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
+                IPEndPoint localEndPoint = new IPEndPoint(_pacAddress, _pacPort);
 
                 // Bind the socket to the local endpoint and listen for incoming connections.
-                tcpSocket.Bind(localEndPoint);
-                tcpSocket.Listen(128);
+                _tcpSocket.Bind(localEndPoint);
+                _tcpSocket.Listen(128);
 
                 // Start an asynchronous socket to listen for connections.
-                tcpSocket.BeginAccept(new AsyncCallback(AcceptCallback), tcpSocket);
+                _tcpSocket.BeginAccept(new AsyncCallback(AcceptCallback), _tcpSocket);
             }
             catch (SocketException)
             {
-                tcpSocket.Close();
+                _tcpSocket.Close();
                 throw;
             }
-
         }
 
         private void AcceptCallback(IAsyncResult ar)
@@ -313,10 +319,10 @@ Connection: Close
 
         public void Stop()
         {
-            if (tcpSocket != null)
+            if (_tcpSocket != null)
             {
-                tcpSocket.Close();
-                tcpSocket = null;
+                _tcpSocket.Close();
+                _tcpSocket = null;
             }
         }
 
